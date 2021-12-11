@@ -1,0 +1,7 @@
+PRIVATE_KEY = "wallet private key"
+OWNER_ADDRESS = "owner address"
+CONTRACT_ADDRESS = "contract address"
+METADATA_URI = "ipfs://QmQm83bkWjMwTJeDZYzJkzsqKop9v8c96taQbcM2gCE77S/"
+API_URL = "network url"
+PINATA_API_KEY = "pinata api key"
+PINATA_API_SECRET = "pinata api secret"

@@ -1,0 +1,193 @@
+[
+  {
+    "name": "TechShark #1",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/1.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Yellow"
+      },
+      {
+        "trait_type": "head",
+        "value":"Piratehat"
+      },
+      {
+        "trait_type": "body",
+        "value":"Red coat"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #2",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/2.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Blue"
+      },
+      {
+        "trait_type": "head",
+        "value":"Sunglasses"
+      },
+      {
+        "trait_type": "body",
+        "value":"Plaid sweater"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #3",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/3.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Stripe"
+      },
+      {
+        "trait_type": "head",
+        "value":"None"
+      },
+      {
+        "trait_type": "body",
+        "value":"Red scarf"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #4",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/4.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Green"
+      },
+      {
+        "trait_type": "head",
+        "value":"Small Cap"
+      },
+      {
+        "trait_type": "body",
+        "value":"Suit"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #5",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/5.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Green"
+      },
+      {
+        "trait_type": "head",
+        "value":"Scarf"
+      },
+      {
+        "trait_type": "body",
+        "value":"Sportswear"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #6",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/6.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Red"
+      },
+      {
+        "trait_type": "head",
+        "value":"Wizard hat"
+      },
+      {
+        "trait_type": "body",
+        "value":"Wizard Robe"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #7",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/7.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Blue"
+      },
+      {
+        "trait_type": "head",
+        "value":"Bamboo hat"
+      },
+      {
+        "trait_type": "body",
+        "value":"Dotted overalls"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #8",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/8.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Orange"
+      },
+      {
+        "trait_type": "head",
+        "value":"None"
+      },
+      {
+        "trait_type": "body",
+        "value":"Vest"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #9",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/9.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Pink"
+      },
+      {
+        "trait_type": "head",
+        "value":"Top hat"
+      },
+      {
+        "trait_type": "body",
+        "value":"Shirt"
+      }
+    ]
+  },
+  {
+    "name": "TechShark #10",
+    "description": "TechBay NFT - TechShark",
+    "image": "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/10.jpg",
+    "attributes": [
+      {
+        "trait_type": "color",
+        "value":"Gray"
+      },
+      {
+        "trait_type": "head",
+        "value":"Blond wig"
+      },
+      {
+        "trait_type": "body",
+        "value":"None"
+      }
+    ]
+  }
+]
+
