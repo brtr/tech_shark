@@ -9,7 +9,7 @@ const { API_URL, PRIVATE_KEY } = process.env;
 
 module.exports = {
    solidity: "0.8.0",
-   defaultNetwork: "matic",
+   defaultNetwork: "rinkeby",
    networks: {
       hardhat: {},
       rinkeby: {

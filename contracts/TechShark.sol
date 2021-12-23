@@ -1289,14 +1289,10 @@ pragma solidity ^0.8.0;
 contract TechShark is ERC721Enumerable, Ownable {
     //supply counters
     uint64 public totalCount = 50;
-    uint256 public price = 0.001 ether;
-    address payable private w1;  // Vault
     string private _baseUri;
     mapping (uint256 => uint256) private _tokenURIs;
 
-    constructor(address payable wAddress) ERC721("TechShark", "TSK") {
-       w1 = wAddress;
-    }
+    constructor() ERC721("TechShark", "TSK") {}
 
     function setBaseURI(string memory _newURI) public onlyOwner {
         _baseUri = _newURI;
@@ -1327,33 +1323,15 @@ contract TechShark is ERC721Enumerable, Ownable {
         return ids;
     }
 
-    function setSalePrice(uint256 nowPrice) public onlyOwner {
-        price = nowPrice;
-    }
-
-    function mint() public payable {
+    function mint() public {
         uint256 ts = totalSupply() + 1;
         require(ts <= totalCount, "max supply reached!");
-        require(msg.value >= price, "value error, please check price.");
-        (bool success, ) = w1.call{ value: msg.value }("");
-        require(success, "payable failed.");
 
         _tokenURIs[ts] = random();
         _safeMint(_msgSender(), ts);
     }
 
-    function setVault(address payable addr) public onlyOwner {
-        w1 = addr;
-    }
-
     function getBalance() public view returns (uint256) {
         return address(this).balance;
-    }
-
-    function withdrawBalance() public onlyOwner {
-        uint256 curr_balance = address(this).balance;
-        if (curr_balance == 0) return;
-        (bool success, ) = w1.call{ value: curr_balance }("");
-        require(success, "Transfer failed.");
     }
 }
