@@ -1,13 +1,14 @@
-import { TargetTokenAddress, ContractAddress, ContractABI } from "./data.js";
+import { OwnerAddress, TargetTokenAddress, TechSharkAddress, WoolAddress, TechSharkABI, WoolABI } from "./data.js";
 
 (function() {
   let loginAddress;
   const serverUrl = "";
   const appId = "";
   const TargetChain = {
-    id: "4",
-    name: "rinkeby"
+    id: "",
+    name: ""
   };
+  const WoolFee = 100 * 1e18;
   const web3 = new Web3(Web3.givenProvider);
   const loginButton = document.getElementById('btn-login');
   const logoutButton = document.getElementById('btn-logout');
@@ -50,8 +51,24 @@ import { TargetTokenAddress, ContractAddress, ContractABI } from "./data.js";
     toggleLoader();
   }
 
+  const transferWool = async function() {
+    var WoolContract = new web3.eth.Contract(WoolABI, WoolAddress);
+    var balance = await WoolContract.methods.balanceOf(loginAddress).call();
+    console.log("Wool Balance: ", balance / 1e18);
+
+    if (balance / 1e18 < 100) {
+      alert("You need 100 WOOL to claim each time");
+    } else {
+      WoolContract.methods.transfer(OwnerAddress, String(WoolFee)).send({from: loginAddress})
+      .then(function(receipt) {
+        console.log("receipt: ", receipt);
+        mint();
+      })
+    }
+  }
+
   const mint = function() {
-    var SharkContract = new web3.eth.Contract(ContractABI, ContractAddress);
+    var SharkContract = new web3.eth.Contract(TechSharkABI, TechSharkAddress);
     SharkContract.methods.mint().send({from: loginAddress})
      .then(function(receipt) {
        console.log("receipt: ", receipt);
@@ -77,7 +94,7 @@ import { TargetTokenAddress, ContractAddress, ContractABI } from "./data.js";
           console.log(nfts);
           if (nfts["result"].length > 0) {
             toggleLoader();
-            mint();
+            transferWool();
           } else {
             alert("You can't claim TechShark");
           }
