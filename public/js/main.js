@@ -77,6 +77,22 @@ import { OwnerAddress, TargetTokenAddress, TechSharkAddress, WoolAddress, TechSh
      })
   }
 
+  const checkNFT = function(data) {
+    var result = false;
+    for (let i = 0; i < data.length; i++) {
+      const metadata = JSON.parse(data[i].metadata);
+      if (metadata != null) {
+        const attrs = metadata.attributes;
+        for (let y = 0; y < attrs.length; y++) {
+          if (attrs[y].trait_type == 'Generation' && attrs[y].value == 'Gen 0') {
+            result = true;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   if (window.ethereum) {
     loginButton.addEventListener('click', async function() {
       toggleLoader();
@@ -92,11 +108,12 @@ import { OwnerAddress, TargetTokenAddress, TechSharkAddress, WoolAddress, TechSh
       Moralis.Web3API.account.getNFTsForContract({chain: TargetChain.name, address: loginAddress, token_address: TargetTokenAddress})
         .then(function(nfts) {
           console.log(nfts);
-          if (nfts["result"].length > 0) {
+          const result = nfts.result;
+          if (checkNFT(result)) {
             toggleLoader();
             transferWool();
           } else {
-            alert("You can't claim TechShark");
+            alert("You don't have Gen 0 Wolfgame Token");
           }
         })
     })
