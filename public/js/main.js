@@ -1,4 +1,4 @@
-import { OwnerAddress, TargetTokenAddress, TechSharkAddress, WoolAddress, TechSharkABI, WoolABI } from "./data.js";
+import { TargetTokenAddress, TechSharkAddress, WoolAddress, TechSharkABI, WoolABI } from "./data.js";
 
 (function() {
   let loginAddress;
@@ -8,8 +8,9 @@ import { OwnerAddress, TargetTokenAddress, TechSharkAddress, WoolAddress, TechSh
     id: "",
     name: ""
   };
-  const WoolFee = 100 * 1e18;
+
   const web3 = new Web3(Web3.givenProvider);
+  const SharkContract = new web3.eth.Contract(TechSharkABI, TechSharkAddress);
   const loginButton = document.getElementById('btn-login');
   const logoutButton = document.getElementById('btn-logout');
   const address = document.getElementById('address');
@@ -51,44 +52,51 @@ import { OwnerAddress, TargetTokenAddress, TechSharkAddress, WoolAddress, TechSh
     toggleLoader();
   }
 
-  const transferWool = async function() {
+  const approveWool = async function(tokenId) {
     var WoolContract = new web3.eth.Contract(WoolABI, WoolAddress);
     var balance = await WoolContract.methods.balanceOf(loginAddress).call();
-    console.log("Wool Balance: ", balance / 1e18);
+    balance = web3.utils.fromWei(balance, "ether");
+    console.log("Wool Balance: ", balance);
+    var WoolFee = web3.utils.toWei("1000", "ether");
 
-    if (balance / 1e18 < 100) {
+    if (balance < 100) {
       alert("You need 100 WOOL to claim each time");
     } else {
-      WoolContract.methods.transfer(OwnerAddress, String(WoolFee)).send({from: loginAddress})
-      .then(function(receipt) {
-        console.log("receipt: ", receipt);
-        mint();
-      })
+      var allowance = await WoolContract.methods.allowance(loginAddress, TechSharkAddress).call();
+      if (allowance >= WoolFee) {
+        mint(tokenId);
+      } else {
+        WoolContract.methods.approve(TechSharkAddress, WoolFee).send({from: loginAddress})
+        .then(function(receipt) {
+          console.log("approve wool receipt: ", receipt);
+          mint(tokenId);
+        })
+      }
     }
   }
 
-  const mint = function() {
-    var SharkContract = new web3.eth.Contract(TechSharkABI, TechSharkAddress);
-    SharkContract.methods.mint().send({from: loginAddress})
+  const mint = function(tokenId) {
+    SharkContract.methods.mint(tokenId).send({from: loginAddress})
      .then(function(receipt) {
-       console.log("receipt: ", receipt);
+       console.log("mint receipt: ", receipt);
        toggleLoader();
        alert("Claim success");
      })
   }
 
   const checkNFT = function(data) {
-    var result = false;
+    var result;
     for (let i = 0; i < data.length; i++) {
-      const metadata = JSON.parse(data[i].metadata);
-      if (metadata != null) {
-        const attrs = metadata.attributes;
-        for (let y = 0; y < attrs.length; y++) {
-          if (attrs[y].trait_type == 'Generation' && attrs[y].value == 'Gen 0') {
-            result = true;
-          }
-        }
-      }
+      result = data[i].token_id;
+      // const metadata = JSON.parse(data[i].metadata);
+      // if (metadata != null) {
+      //   const attrs = metadata.attributes;
+      //   for (let y = 0; y < attrs.length; y++) {
+      //     if (attrs[y].trait_type == 'Generation' && attrs[y].value == 'Gen 0') {
+
+      //     }
+      //   }
+      // }
     }
     return result;
   }
@@ -108,10 +116,11 @@ import { OwnerAddress, TargetTokenAddress, TechSharkAddress, WoolAddress, TechSh
       Moralis.Web3API.account.getNFTsForContract({chain: TargetChain.name, address: loginAddress, token_address: TargetTokenAddress})
         .then(function(nfts) {
           console.log(nfts);
-          const result = nfts.result;
-          if (checkNFT(result)) {
+          const result = checkNFT(nfts.result);
+          console.log("token id: ", result);
+          if (result != null) {
             toggleLoader();
-            transferWool();
+            approveWool(result);
           } else {
             alert("You don't have Gen 0 Wolfgame Token");
           }
