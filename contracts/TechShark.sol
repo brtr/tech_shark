@@ -1479,6 +1479,7 @@ contract TechShark is ERC721Enumerable, Ownable {
     address public woolf;
     IERC20 public wool;
     uint256 public fee = 100 ether;
+    mapping (address => uint256[]) public _woolfTokenIds;
 
     constructor() ERC721("TechShark", "TSK") {}
 
@@ -1520,24 +1521,37 @@ contract TechShark is ERC721Enumerable, Ownable {
         return ids;
     }
 
-    function mint(uint256 tokenId) public {
-        uint256 ts = totalSupply() + 1;
-        require(ts <= totalCount, "max supply reached!");
-        require(validateWolfToken(tokenId));
+    function mint(uint256 amount) public {
+        getUserTokenIds();
+        uint256 ts = totalSupply();
+        require(ts + amount <= totalCount, "max supply reached!");
+        require(amount > 0, "amount must greater than zero");
 
-        _tokenURIs[ts] = random();
-        _safeMint(_msgSender(), ts);
+        uint256[] memory tokenIds = _woolfTokenIds[_msgSender()];
+        require(tokenIds.length > 0 && tokenIds[0] <= IWoolf(woolf).getPaidTokens(), "You don't have Gen 0 Wolfgame Token");
+
+        uint256 totalFee = fee * amount;
+        require(wool.balanceOf(_msgSender()) > totalFee, "You need 100 WOOL to claim each token");
+        wool.safeTransferFrom(_msgSender(), owner(), totalFee);
+
+        for (uint i = 0; i < amount; i++) {
+          ts++;
+          _tokenURIs[ts] = random();
+          _safeMint(_msgSender(), ts);
+        }
     }
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
 
-    function validateWolfToken(uint256 tokenId) private returns (bool) {
-        require(tokenId <= IWoolf(woolf).getPaidTokens(), "You don't have Gen 0 Wolfgame Token");
-        require(wool.balanceOf(_msgSender()) > fee, "You need 100 WOOL to claim each time");
-        wool.safeTransferFrom(_msgSender(), owner(), fee);
-        return true;
+    function getUserTokenIds() private {
+        IERC721Enumerable Woolf = IERC721Enumerable(woolf);
+        uint256 balance = Woolf.balanceOf(_msgSender());
+        for (uint256 i = 0; i < balance; i++) {
+            uint256 tokenId = Woolf.tokenOfOwnerByIndex(_msgSender(), i);
+            _woolfTokenIds[_msgSender()].push(tokenId);
+        }
     }
 
 }
