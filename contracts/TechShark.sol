@@ -1528,7 +1528,7 @@ contract TechShark is ERC721Enumerable, Ownable {
         require(amount > 0, "amount must greater than zero");
 
         uint256[] memory tokenIds = _woolfTokenIds[_msgSender()];
-        require(tokenIds.length > 0 && tokenIds[0] <= IWoolf(woolf).getPaidTokens(), "You don't have Gen 0 Wolfgame Token");
+        require(tokenIds.length > 0 && getMinNumber(tokenIds) <= IWoolf(woolf).getPaidTokens(), "You do not have Gen 0 Wolfgame Token");
 
         uint256 totalFee = fee * amount;
         require(wool.balanceOf(_msgSender()) > totalFee, "You need 100 WOOL to claim each token");
@@ -1552,6 +1552,17 @@ contract TechShark is ERC721Enumerable, Ownable {
             uint256 tokenId = Woolf.tokenOfOwnerByIndex(_msgSender(), i);
             _woolfTokenIds[_msgSender()].push(tokenId);
         }
+    }
+
+    function getMinNumber(uint256[] memory tokenIds) private returns (uint256) {
+        uint256 min = 0;
+        for (uint i = 0; i < tokenIds.length; i++) {
+            if (min == 0 || min > tokenIds[i]) {
+                min = tokenIds[i];
+            }
+        }
+
+        return min;
     }
 
 }
