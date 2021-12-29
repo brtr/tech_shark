@@ -461,6 +461,8 @@ interface IERC20 {
         uint256 amount
     ) external returns (bool);
 
+    function burn(address account, uint256 amount) external returns (bool);
+
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
      * another (`to`).
@@ -477,104 +479,386 @@ interface IERC20 {
 }
 
 
-// File: @openzeppelin/contracts/token/ERC20/SafeERC20.sol
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
+// File: @openzeppelin/contracts/token/ERC20/IERC20Metadata.sol
 
 /**
- * @title SafeERC20
- * @dev Wrappers around ERC20 operations that throw on failure (when the token
- * contract returns false). Tokens that return no value (and instead revert or
- * throw on failure) are also supported, non-reverting calls are assumed to be
- * successful.
- * To use this library you can add a `using SafeERC20 for IERC20;` statement to your contract,
- * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
+ * @dev Interface for the optional metadata functions from the ERC20 standard.
+ *
+ * _Available since v4.1._
  */
-library SafeERC20 {
-    using Address for address;
-
-    function safeTransfer(
-        IERC20 token,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
-    }
-
-    function safeTransferFrom(
-        IERC20 token,
-        address from,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
-    }
+interface IERC20Metadata is IERC20 {
+    /**
+     * @dev Returns the name of the token.
+     */
+    function name() external view returns (string memory);
 
     /**
-     * @dev Deprecated. This function has issues similar to the ones found in
-     * {IERC20-approve}, and its usage is discouraged.
-     *
-     * Whenever possible, use {safeIncreaseAllowance} and
-     * {safeDecreaseAllowance} instead.
+     * @dev Returns the symbol of the token.
      */
-    function safeApprove(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        // safeApprove should only be called when setting an initial allowance,
-        // or when resetting it to zero. To increase and decrease it, use
-        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
-        require(
-            (value == 0) || (token.allowance(address(this), spender) == 0),
-            "SafeERC20: approve from non-zero to non-zero allowance"
-        );
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
-    }
-
-    function safeIncreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        uint256 newAllowance = token.allowance(address(this), spender) + value;
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    function safeDecreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        unchecked {
-            uint256 oldAllowance = token.allowance(address(this), spender);
-            require(oldAllowance >= value, "SafeERC20: decreased allowance below zero");
-            uint256 newAllowance = oldAllowance - value;
-            _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-        }
-    }
+    function symbol() external view returns (string memory);
 
     /**
-     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
-     * on the return value: the return value is optional (but if data is returned, it must not be false).
-     * @param token The token targeted by the call.
-     * @param data The call data (encoded using abi.encode or one of its variants).
+     * @dev Returns the decimals places of the token.
      */
-    function _callOptionalReturn(IERC20 token, bytes memory data) private {
-        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
-        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
-        // the target address contains contract code and also asserts for success in the low-level call.
-
-        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
-        if (returndata.length > 0) {
-            // Return data is optional
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
-        }
-    }
+    function decimals() external view returns (uint8);
 }
 
+
+
+// File: @openzeppelin/contracts/token/ERC20/ERC20.sol
+
+/**
+ * @dev Implementation of the {IERC20} interface.
+ *
+ * This implementation is agnostic to the way tokens are created. This means
+ * that a supply mechanism has to be added in a derived contract using {_mint}.
+ * For a generic mechanism see {ERC20PresetMinterPauser}.
+ *
+ * TIP: For a detailed writeup see our guide
+ * https://forum.zeppelin.solutions/t/how-to-implement-erc20-supply-mechanisms/226[How
+ * to implement supply mechanisms].
+ *
+ * We have followed general OpenZeppelin Contracts guidelines: functions revert
+ * instead returning `false` on failure. This behavior is nonetheless
+ * conventional and does not conflict with the expectations of ERC20
+ * applications.
+ *
+ * Additionally, an {Approval} event is emitted on calls to {transferFrom}.
+ * This allows applications to reconstruct the allowance for all accounts just
+ * by listening to said events. Other implementations of the EIP may not emit
+ * these events, as it isn't required by the specification.
+ *
+ * Finally, the non-standard {decreaseAllowance} and {increaseAllowance}
+ * functions have been added to mitigate the well-known issues around setting
+ * allowances. See {IERC20-approve}.
+ */
+contract ERC20 is Context, IERC20, IERC20Metadata {
+    mapping(address => uint256) private _balances;
+
+    mapping(address => mapping(address => uint256)) private _allowances;
+
+    uint256 private _totalSupply;
+
+    string private _name;
+    string private _symbol;
+
+    /**
+     * @dev Sets the values for {name} and {symbol}.
+     *
+     * The default value of {decimals} is 18. To select a different value for
+     * {decimals} you should overload it.
+     *
+     * All two of these values are immutable: they can only be set once during
+     * construction.
+     */
+    constructor(string memory name_, string memory symbol_) {
+        _name = name_;
+        _symbol = symbol_;
+    }
+
+    /**
+     * @dev Returns the name of the token.
+     */
+    function name() public view virtual override returns (string memory) {
+        return _name;
+    }
+
+    /**
+     * @dev Returns the symbol of the token, usually a shorter version of the
+     * name.
+     */
+    function symbol() public view virtual override returns (string memory) {
+        return _symbol;
+    }
+
+    /**
+     * @dev Returns the number of decimals used to get its user representation.
+     * For example, if `decimals` equals `2`, a balance of `505` tokens should
+     * be displayed to a user as `5.05` (`505 / 10 ** 2`).
+     *
+     * Tokens usually opt for a value of 18, imitating the relationship between
+     * Ether and Wei. This is the value {ERC20} uses, unless this function is
+     * overridden;
+     *
+     * NOTE: This information is only used for _display_ purposes: it in
+     * no way affects any of the arithmetic of the contract, including
+     * {IERC20-balanceOf} and {IERC20-transfer}.
+     */
+    function decimals() public view virtual override returns (uint8) {
+        return 18;
+    }
+
+    /**
+     * @dev See {IERC20-totalSupply}.
+     */
+    function totalSupply() public view virtual override returns (uint256) {
+        return _totalSupply;
+    }
+
+    /**
+     * @dev See {IERC20-balanceOf}.
+     */
+    function balanceOf(address account) public view virtual override returns (uint256) {
+        return _balances[account];
+    }
+
+    /**
+     * @dev See {IERC20-transfer}.
+     *
+     * Requirements:
+     *
+     * - `recipient` cannot be the zero address.
+     * - the caller must have a balance of at least `amount`.
+     */
+    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+        _transfer(_msgSender(), recipient, amount);
+        return true;
+    }
+
+    /**
+     * @dev See {IERC20-allowance}.
+     */
+    function allowance(address owner, address spender) public view virtual override returns (uint256) {
+        return _allowances[owner][spender];
+    }
+
+    /**
+     * @dev See {IERC20-approve}.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+        _approve(_msgSender(), spender, amount);
+        return true;
+    }
+
+    /**
+     * @dev See {IERC20-transferFrom}.
+     *
+     * Emits an {Approval} event indicating the updated allowance. This is not
+     * required by the EIP. See the note at the beginning of {ERC20}.
+     *
+     * Requirements:
+     *
+     * - `sender` and `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     * - the caller must have allowance for ``sender``'s tokens of at least
+     * `amount`.
+     */
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public virtual override returns (bool) {
+        _transfer(sender, recipient, amount);
+
+        uint256 currentAllowance = _allowances[sender][_msgSender()];
+        require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
+        unchecked {
+            _approve(sender, _msgSender(), currentAllowance - amount);
+        }
+
+        return true;
+    }
+
+    /**
+     * @dev Atomically increases the allowance granted to `spender` by the caller.
+     *
+     * This is an alternative to {approve} that can be used as a mitigation for
+     * problems described in {IERC20-approve}.
+     *
+     * Emits an {Approval} event indicating the updated allowance.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender] + addedValue);
+        return true;
+    }
+
+    /**
+     * @dev Atomically decreases the allowance granted to `spender` by the caller.
+     *
+     * This is an alternative to {approve} that can be used as a mitigation for
+     * problems described in {IERC20-approve}.
+     *
+     * Emits an {Approval} event indicating the updated allowance.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     * - `spender` must have allowance for the caller of at least
+     * `subtractedValue`.
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
+        uint256 currentAllowance = _allowances[_msgSender()][spender];
+        require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
+        unchecked {
+            _approve(_msgSender(), spender, currentAllowance - subtractedValue);
+        }
+
+        return true;
+    }
+
+    function burn(address account, uint256 amount) public override virtual returns (bool) {
+        _burn(account, amount);
+        return true;
+    }
+
+    /**
+     * @dev Moves `amount` of tokens from `sender` to `recipient`.
+     *
+     * This internal function is equivalent to {transfer}, and can be used to
+     * e.g. implement automatic token fees, slashing mechanisms, etc.
+     *
+     * Emits a {Transfer} event.
+     *
+     * Requirements:
+     *
+     * - `sender` cannot be the zero address.
+     * - `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     */
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal virtual {
+        require(sender != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20: transfer to the zero address");
+
+        _beforeTokenTransfer(sender, recipient, amount);
+
+        uint256 senderBalance = _balances[sender];
+        require(senderBalance >= amount, "ERC20: transfer amount exceeds balance");
+        unchecked {
+            _balances[sender] = senderBalance - amount;
+        }
+        _balances[recipient] += amount;
+
+        emit Transfer(sender, recipient, amount);
+
+        _afterTokenTransfer(sender, recipient, amount);
+    }
+
+    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+     * the total supply.
+     *
+     * Emits a {Transfer} event with `from` set to the zero address.
+     *
+     * Requirements:
+     *
+     * - `account` cannot be the zero address.
+     */
+    function _mint(address account, uint256 amount) internal virtual {
+        require(account != address(0), "ERC20: mint to the zero address");
+
+        _beforeTokenTransfer(address(0), account, amount);
+
+        _totalSupply += amount;
+        _balances[account] += amount;
+        emit Transfer(address(0), account, amount);
+
+        _afterTokenTransfer(address(0), account, amount);
+    }
+
+    /**
+     * @dev Destroys `amount` tokens from `account`, reducing the
+     * total supply.
+     *
+     * Emits a {Transfer} event with `to` set to the zero address.
+     *
+     * Requirements:
+     *
+     * - `account` cannot be the zero address.
+     * - `account` must have at least `amount` tokens.
+     */
+    function _burn(address account, uint256 amount) internal virtual {
+        require(account != address(0), "ERC20: burn from the zero address");
+
+        _beforeTokenTransfer(account, address(0), amount);
+
+        uint256 accountBalance = _balances[account];
+        require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
+        unchecked {
+            _balances[account] = accountBalance - amount;
+        }
+        _totalSupply -= amount;
+
+        emit Transfer(account, address(0), amount);
+
+        _afterTokenTransfer(account, address(0), amount);
+    }
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the `owner` s tokens.
+     *
+     * This internal function is equivalent to `approve`, and can be used to
+     * e.g. set automatic allowances for certain subsystems, etc.
+     *
+     * Emits an {Approval} event.
+     *
+     * Requirements:
+     *
+     * - `owner` cannot be the zero address.
+     * - `spender` cannot be the zero address.
+     */
+    function _approve(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal virtual {
+        require(owner != address(0), "ERC20: approve from the zero address");
+        require(spender != address(0), "ERC20: approve to the zero address");
+
+        _allowances[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
+    }
+
+    /**
+     * @dev Hook that is called before any transfer of tokens. This includes
+     * minting and burning.
+     *
+     * Calling conditions:
+     *
+     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
+     * will be transferred to `to`.
+     * - when `from` is zero, `amount` tokens will be minted for `to`.
+     * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
+     * - `from` and `to` are never both zero.
+     *
+     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+     */
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {}
+
+    /**
+     * @dev Hook that is called after any transfer of tokens. This includes
+     * minting and burning.
+     *
+     * Calling conditions:
+     *
+     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
+     * has been transferred to `to`.
+     * - when `from` is zero, `amount` tokens have been minted for `to`.
+     * - when `to` is zero, `amount` of ``from``'s tokens have been burned.
+     * - `from` and `to` are never both zero.
+     *
+     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+     */
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {}
+}
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721Receiver.sol
 
@@ -1467,47 +1751,136 @@ pragma solidity ^0.8.0;
 
 
 interface IWoolf {
+    struct SheepWolf {
+        bool isSheep;
+    }
+
     function getPaidTokens() external view returns (uint256);
+    function getTokenTraits(uint256 tokenId) external view returns (SheepWolf memory);
 }
 
 contract TechShark is ERC721Enumerable, Ownable {
-    using SafeERC20 for IERC20;
     //supply counters
     uint64 public totalCount = 50;
-    string private _baseUri;
     mapping (uint256 => uint256) private _tokenURIs;
     address public woolf;
-    uint256 public MINT_PRICE = 0.001 ether;
+    IERC20 public wool;
+    uint256 public MINT_PRICE = 0.0001 ether;
     mapping (address => uint256[]) public _woolfTokenIds;
+    mapping (uint256 => Trait[]) public tokenTraits;
+    mapping (address => uint256[]) public sheepWolfCount;
+    string[] traitsName;
+
+    struct Trait {
+        string name;
+        string value;
+    }
+
+    bool public showAttrs = false;
+    string public defaultImage = "ipfs://QmZhuor7jUC91YCFgdUmct5EAt6eNpFpzonEHjoa7kfpUm";
 
     constructor() ERC721("TechShark", "TSK") {}
-
-    function setBaseURI(string memory _newURI) public onlyOwner {
-        _baseUri = _newURI;
-    }
 
     function setMaxNftSupply(uint64 maxNftSupply) public onlyOwner {
         totalCount = maxNftSupply;
     }
 
-    function setContract(address _woolf) public onlyOwner {
+    function setContract(address _woolf, IERC20 _wool) public onlyOwner {
         woolf = _woolf;
+        wool = _wool;
     }
 
-    function setFee(uint256 _price) public onlyOwner {
+    function setPrice(uint256 _price) public onlyOwner {
         MINT_PRICE = _price;
     }
 
-    function random() public view returns (uint256) {
-        // get an integer between 0 and 10
-        return uint8(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)))%251/25);
+    function setShowAttrs(bool result) public onlyOwner {
+        showAttrs = result;
     }
 
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+    function addTrait(string memory name, string[] memory values) public onlyOwner {
+        uint256 ts = totalSupply();
+        uint256 randomIdx;
+        for (uint i = 1; i <= ts; i++) {
+            randomIdx = random(i);
+            Trait memory s;
+            s.name = name;
+            s.value = values[randomIdx];
+            tokenTraits[i].push(s);
+            randomIdx = 0;
+        }
+    }
 
-        string memory baseURI = _baseUri;
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, Strings.toString(_tokenURIs[tokenId]))) : "";
+    function random(uint256 seed) public view returns (uint256) {
+        // get an integer between 0 and 10
+        return uint8(uint256(keccak256(abi.encodePacked(
+            block.timestamp,
+            block.difficulty,
+            seed
+        )))%251/25);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        string memory imagePath = showAttrs ? getImagePath(_tokenURIs[tokenId]) : defaultImage;
+
+        string memory metadata = string(abi.encodePacked(
+            '{"name": "TechShark #',
+            Strings.toString(tokenId),
+            '", "description": "TechBay NFT - TechShark.", "image": "',
+            imagePath,
+            '", "attributes":',
+            compileAttributes(tokenId),
+            "}"
+        ));
+
+        return string(abi.encodePacked(
+            "data:application/json;base64,",
+            base64(bytes(metadata))
+        ));
+    }
+
+    function getImagePath(uint256 tokenId) private pure returns (string memory) {
+        return string(abi.encodePacked(
+            "ipfs://QmTAPhUdwiyGZSBUyV7JKYMw1uFKDeA8R2yh4wwh6pCuVa/",
+            Strings.toString(tokenId),
+            ".jpg"
+        ));
+    }
+
+    function compileAttributes(uint256 tokenId) private view returns (string memory) {
+        Trait[] memory s = tokenTraits[tokenId];
+        string memory traits;
+        if (showAttrs) {
+            for (uint256 i = 0; i < s.length; i++) {
+                string memory comma = i == s.length - 1 ? '' : ',';
+                traits = string(abi.encodePacked(
+                    traits,
+                    '{"trait_type":"',
+                    s[i].name,
+                    '","value":"',
+                    s[i].value,
+                    '"}',
+                    comma
+                ));
+            }
+        }
+
+        return string(abi.encodePacked(
+            '[',
+            traits,
+            ']'
+        ));
+    }
+
+    function generate(uint256 tokenId) private {
+        traitsName = ["Sheep", "Wolf"];
+        for (uint i = 0; i < traitsName.length; i++) {
+            Trait memory s;
+            s.name = traitsName[i];
+            s.value = Strings.toString(sheepWolfCount[_msgSender()][i]);
+            tokenTraits[tokenId].push(s);
+        }
     }
 
     function tokensOfOwner(address owner) public view returns (uint256[] memory) {
@@ -1522,16 +1895,18 @@ contract TechShark is ERC721Enumerable, Ownable {
     function mint(uint256 amount) public payable {
         getUserTokenIds();
         uint256 ts = totalSupply();
-        require(ts + amount <= totalCount, "max supply reached!");
-        require(amount > 0, "amount must greater than zero");
+        require(ts + amount <= totalCount, "All tokens minted");
+        require(amount > 0, "Amount must greater than zero");
         require(MINT_PRICE * amount == msg.value, "Invalid payment amount");
 
         uint256[] memory tokenIds = _woolfTokenIds[_msgSender()];
         require(tokenIds.length > 0 && getMinNumber(tokenIds) <= IWoolf(woolf).getPaidTokens(), "You do not have Gen 0 Wolfgame Token");
+        getTokenCount();
 
         for (uint i = 0; i < amount; i++) {
           ts++;
-          _tokenURIs[ts] = random();
+          _tokenURIs[ts] = random(ts);
+          generate(ts);
           _safeMint(_msgSender(), ts);
         }
     }
@@ -1549,7 +1924,7 @@ contract TechShark is ERC721Enumerable, Ownable {
         }
     }
 
-    function getMinNumber(uint256[] memory tokenIds) private returns (uint256) {
+    function getMinNumber(uint256[] memory tokenIds) private pure returns (uint256) {
         uint256 min = 0;
         for (uint i = 0; i < tokenIds.length; i++) {
             if (min == 0 || min > tokenIds[i]) {
@@ -1558,6 +1933,79 @@ contract TechShark is ERC721Enumerable, Ownable {
         }
 
         return min;
+    }
+
+    function getTokenCount() private {
+        uint256[] memory tokenIds = _woolfTokenIds[_msgSender()];
+        uint256 sheepCount = 0;
+        uint256 wolfCount = 0;
+
+        for (uint i = 0; i < tokenIds.length; i++) {
+            IWoolf.SheepWolf memory s = IWoolf(woolf).getTokenTraits(tokenIds[i]);
+            if (s.isSheep) {
+                sheepCount++;
+            } else {
+                wolfCount++;
+            }
+        }
+
+        sheepWolfCount[_msgSender()] = [sheepCount, wolfCount];
+    }
+
+    string internal constant TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+    function base64(bytes memory data) internal pure returns (string memory) {
+        if (data.length == 0) return '';
+
+        // load the table into memory
+        string memory table = TABLE;
+
+        // multiply by 4/3 rounded up
+        uint256 encodedLen = 4 * ((data.length + 2) / 3);
+
+        // add some extra buffer at the end required for the writing
+        string memory result = new string(encodedLen + 32);
+
+        assembly {
+        // set the actual output length
+        mstore(result, encodedLen)
+
+        // prepare the lookup table
+        let tablePtr := add(table, 1)
+
+        // input ptr
+        let dataPtr := data
+        let endPtr := add(dataPtr, mload(data))
+
+        // result ptr, jump over length
+        let resultPtr := add(result, 32)
+
+        // run over the input, 3 bytes at a time
+        for {} lt(dataPtr, endPtr) {}
+        {
+            dataPtr := add(dataPtr, 3)
+
+            // read 3 bytes
+            let input := mload(dataPtr)
+
+            // write 4 characters
+            mstore(resultPtr, shl(248, mload(add(tablePtr, and(shr(18, input), 0x3F)))))
+            resultPtr := add(resultPtr, 1)
+            mstore(resultPtr, shl(248, mload(add(tablePtr, and(shr(12, input), 0x3F)))))
+            resultPtr := add(resultPtr, 1)
+            mstore(resultPtr, shl(248, mload(add(tablePtr, and(shr( 6, input), 0x3F)))))
+            resultPtr := add(resultPtr, 1)
+            mstore(resultPtr, shl(248, mload(add(tablePtr, and(        input,  0x3F)))))
+            resultPtr := add(resultPtr, 1)
+        }
+
+        // padding with '='
+        switch mod(mload(data), 3)
+        case 1 { mstore(sub(resultPtr, 2), shl(240, 0x3d3d)) }
+        case 2 { mstore(sub(resultPtr, 1), shl(248, 0x3d)) }
+        }
+
+        return result;
     }
 
 }
