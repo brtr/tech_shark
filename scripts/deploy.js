@@ -4,8 +4,10 @@ async function main() {
   const NFT = await hre.ethers.getContractFactory("TechShark");
   const nft = await NFT.deploy();   //CONTRACT INFO
   await nft.deployed();
+
   const contract = NFT.attach(nft.address);
   await contract.setBaseURI(METADATA_URI);
+  await new Promise(resolve => setTimeout(resolve, 5000));
   await contract.setContract(WOOLF_ADDRESS, WOOL_ADDRESS);
   console.log("Contract deployed to:", nft.address);
 }
