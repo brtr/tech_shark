@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 async function main() {
-  const { METADATA_URI, WOOLF_ADDRESS, WOOL_ADDRESS } = process.env;
+  const { METADATA_URI, WOOLF_ADDRESS } = process.env;
   const NFT = await hre.ethers.getContractFactory("TechShark");
   const nft = await NFT.deploy();   //CONTRACT INFO
   await nft.deployed();
@@ -8,7 +8,7 @@ async function main() {
   const contract = NFT.attach(nft.address);
   await contract.setBaseURI(METADATA_URI);
   await new Promise(resolve => setTimeout(resolve, 5000));
-  await contract.setContract(WOOLF_ADDRESS, WOOL_ADDRESS);
+  await contract.setContract(WOOLF_ADDRESS);
   console.log("Contract deployed to:", nft.address);
 }
 main().then(() => process.exit(0)).catch(error => {

@@ -1477,8 +1477,7 @@ contract TechShark is ERC721Enumerable, Ownable {
     string private _baseUri;
     mapping (uint256 => uint256) private _tokenURIs;
     address public woolf;
-    IERC20 public wool;
-    uint256 public fee = 100 ether;
+    uint256 public MINT_PRICE = 0.001 ether;
     mapping (address => uint256[]) public _woolfTokenIds;
 
     constructor() ERC721("TechShark", "TSK") {}
@@ -1491,13 +1490,12 @@ contract TechShark is ERC721Enumerable, Ownable {
         totalCount = maxNftSupply;
     }
 
-    function setContract(address _woolf, IERC20 _wool) public onlyOwner {
+    function setContract(address _woolf) public onlyOwner {
         woolf = _woolf;
-        wool = _wool;
     }
 
-    function setFee(uint256 _fee) public onlyOwner {
-        fee = _fee;
+    function setFee(uint256 _price) public onlyOwner {
+        MINT_PRICE = _price;
     }
 
     function random() public view returns (uint256) {
@@ -1521,18 +1519,15 @@ contract TechShark is ERC721Enumerable, Ownable {
         return ids;
     }
 
-    function mint(uint256 amount) public {
+    function mint(uint256 amount) public payable {
         getUserTokenIds();
         uint256 ts = totalSupply();
         require(ts + amount <= totalCount, "max supply reached!");
         require(amount > 0, "amount must greater than zero");
+        require(MINT_PRICE * amount == msg.value, "Invalid payment amount");
 
         uint256[] memory tokenIds = _woolfTokenIds[_msgSender()];
         require(tokenIds.length > 0 && getMinNumber(tokenIds) <= IWoolf(woolf).getPaidTokens(), "You do not have Gen 0 Wolfgame Token");
-
-        uint256 totalFee = fee * amount;
-        require(wool.balanceOf(_msgSender()) > totalFee, "You need 100 WOOL to claim each token");
-        wool.safeTransferFrom(_msgSender(), owner(), totalFee);
 
         for (uint i = 0; i < amount; i++) {
           ts++;
