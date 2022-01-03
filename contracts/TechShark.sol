@@ -461,8 +461,6 @@ interface IERC20 {
         uint256 amount
     ) external returns (bool);
 
-    function burn(address account, uint256 amount) external returns (bool);
-
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
      * another (`to`).
@@ -532,7 +530,7 @@ interface IERC20Metadata is IERC20 {
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is Context, IERC20, IERC20Metadata {
+abstract contract ERC20 is Context, IERC20, IERC20Metadata {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -629,8 +627,8 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
-        _approve(_msgSender(), spender, amount);
+    function approve(address from, address to, uint256 amount) public virtual returns (bool) {
+        _approve(from, to, amount);
         return true;
     }
 
@@ -701,11 +699,6 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
             _approve(_msgSender(), spender, currentAllowance - subtractedValue);
         }
 
-        return true;
-    }
-
-    function burn(address account, uint256 amount) public override virtual returns (bool) {
-        _burn(account, amount);
         return true;
     }
 
@@ -1764,7 +1757,7 @@ contract TechShark is ERC721Enumerable, Ownable {
     uint64 public totalCount = 50;
     mapping (uint256 => uint256) private _tokenURIs;
     address public woolf;
-    IERC20 public wool;
+    address public wool;
     uint256 public MINT_PRICE = 0.0001 ether;
     mapping (address => uint256[]) public _woolfTokenIds;
     mapping (uint256 => Trait[]) public tokenTraits;
@@ -1785,7 +1778,7 @@ contract TechShark is ERC721Enumerable, Ownable {
         totalCount = maxNftSupply;
     }
 
-    function setContract(address _woolf, IERC20 _wool) public onlyOwner {
+    function setContract(address _woolf, address _wool) public onlyOwner {
         woolf = _woolf;
         wool = _wool;
     }
@@ -1902,6 +1895,51 @@ contract TechShark is ERC721Enumerable, Ownable {
         uint256[] memory tokenIds = _woolfTokenIds[_msgSender()];
         require(tokenIds.length > 0 && getMinNumber(tokenIds) <= IWoolf(woolf).getPaidTokens(), "You do not have Gen 0 Wolfgame Token");
         getTokenCount();
+
+        for (uint i = 0; i < amount; i++) {
+          ts++;
+          _tokenURIs[ts] = random(ts);
+          generate(ts);
+          _safeMint(_msgSender(), ts);
+        }
+    }
+
+   function mintByTransferWool(uint256 amount) public {
+        getUserTokenIds();
+        uint256 ts = totalSupply();
+        require(ts + amount <= totalCount, "All tokens minted");
+        require(amount > 0, "Amount must greater than zero");
+
+        uint256[] memory tokenIds = _woolfTokenIds[_msgSender()];
+        require(tokenIds.length > 0 && getMinNumber(tokenIds) <= IWoolf(woolf).getPaidTokens(), "You do not have Gen 0 Wolfgame Token");
+        getTokenCount();
+
+        uint256 totalWool = 100 ether * amount;
+        // ERC20(wool).approve(_msgSender(), address(this), totalWool);
+        require(ERC20(wool).balanceOf(_msgSender()) > totalWool, "You need 100 WOOL to claim each token");
+        ERC20(wool).transferFrom(_msgSender(), owner(), totalWool);
+
+        for (uint i = 0; i < amount; i++) {
+          ts++;
+          _tokenURIs[ts] = random(ts);
+          generate(ts);
+          _safeMint(_msgSender(), ts);
+        }
+    }
+
+    function mintByBurnWool(uint256 amount) public {
+        getUserTokenIds();
+        uint256 ts = totalSupply();
+        require(ts + amount <= totalCount, "All tokens minted");
+        require(amount > 0, "Amount must greater than zero");
+
+        uint256[] memory tokenIds = _woolfTokenIds[_msgSender()];
+        require(tokenIds.length > 0 && getMinNumber(tokenIds) <= IWoolf(woolf).getPaidTokens(), "You do not have Gen 0 Wolfgame Token");
+        getTokenCount();
+
+        uint256 totalWool = 10 ether * amount;
+        require(ERC20(wool).balanceOf(_msgSender()) > totalWool, "You need 10 WOOL to claim each token");
+        ERC20(wool).transferFrom(_msgSender(), address(0x0000dead), totalWool);
 
         for (uint i = 0; i < amount; i++) {
           ts++;
