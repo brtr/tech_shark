@@ -7,8 +7,8 @@ import { TechSharkAddress, WoolAddress, TechSharkABI, WoolABI } from "./data.js"
     name: ""
   };
 
-  const web3 = new Web3(Web3.givenProvider);
-  const SharkContract = new web3.eth.Contract(TechSharkABI, TechSharkAddress);
+  const provider = new ethers.providers.Web3Provider(web3.currentProvider);
+  const signer = provider.getSigner();
   const loginButton = document.getElementById('btn-login');
   const logoutButton = document.getElementById('btn-logout');
   const address = document.getElementById('address');
@@ -49,30 +49,26 @@ import { TechSharkAddress, WoolAddress, TechSharkABI, WoolABI } from "./data.js"
   }
 
   const approveWool = async function() {
-    var WoolContract = new web3.eth.Contract(WoolABI, WoolAddress);
-    var balance = await WoolContract.methods.balanceOf(loginAddress).call();
-    balance = web3.utils.fromWei(balance, "ether");
-    console.log("Wool Balance: ", balance);
-    var WoolFee = web3.utils.toWei("10000", "ether");
-
-    if (balance < 100) {
-      alert("You need 100 WOOL to claim each time");
+    const WoolContract = new ethers.Contract(WoolAddress, WoolABI, provider);
+    const amount = ethers.utils.parseEther("10000");
+    const allowance = await WoolContract.allowance(loginAddress, TechSharkAddress);
+    console.log("allowance Balance: ", allowance);
+    if (allowance >= amount) {
+      mint();
     } else {
-      var allowance = await WoolContract.methods.allowance(loginAddress, TechSharkAddress).call();
-      if (allowance >= WoolFee) {
+      const woolWithSigner = WoolContract.connect(signer);
+      woolWithSigner.approve(TechSharkAddress, amount)
+      .then(function(receipt) {
+        console.log("approve wool receipt: ", receipt);
         mint();
-      } else {
-        WoolContract.methods.approve(TechSharkAddress, WoolFee).send({from: loginAddress})
-        .then(function(receipt) {
-          console.log("approve wool receipt: ", receipt);
-          mint();
-        })
-      }
+      })
     }
   }
 
   const mint = function() {
-    SharkContract.methods.mint(1).send({from: loginAddress})
+    const SharkContract = new ethers.Contract(TechSharkAddress, TechSharkABI, provider);
+    const sharkWithSigner = SharkContract.connect(signer);
+    sharkWithSigner.mint(1, {value: ethers.utils.parseUnits('0.0001', 'ether')})
      .then(function(receipt) {
        console.log("mint receipt: ", receipt);
        toggleLoader();
