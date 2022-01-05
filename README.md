@@ -42,3 +42,14 @@ npx hardhat verify --network rinkeby 合约地址
 ```
 npx hardhat run scripts/mint.js --network rinkeby
 ```
+
+## 前端服务器地址
+
+44.192.130.77
+
+## 启动node
+
+```
+node src/server.js
+```
+
